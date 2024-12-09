@@ -15,21 +15,27 @@ const io = socketIo(server, {
 app.use(cors());
 app.use(express.json());
 
-// Timer verisi
+// Timer Verisi
 let timer = { minutes: 0, seconds: 0 };
 let intervalId = null;
-let remainingTime = { minutes: 0, seconds: 0 }; // Kalan zamanı saklamak için değişken
+let remainingTime = { minutes: 0, seconds: 0 };
 
-// Timer API'leri
+// Mesaj Verisi
+let messages = [];
+
+// Öğrenci Verisi
+let students = [];
+
+// Timer İşlemleri
 const startTimer = (minutes) => {
-  clearInterval(intervalId); // Önce eski timer varsa durdur
-  timer = { minutes, seconds: 0 }; // Timer'ı sıfırla
-  remainingTime = { minutes, seconds: 0 }; // Kalan zamanı sıfırla
+  clearInterval(intervalId);
+  timer = { minutes, seconds: 0 };
+  remainingTime = { minutes, seconds: 0 };
 
   intervalId = setInterval(() => {
     if (timer.seconds === 0) {
       if (timer.minutes === 0) {
-        clearInterval(intervalId); // Timer bittiğinde durdur
+        clearInterval(intervalId); // Timer Bitti
         return;
       }
       timer.minutes -= 1;
@@ -37,17 +43,17 @@ const startTimer = (minutes) => {
     } else {
       timer.seconds -= 1;
     }
-    io.emit('timerUpdated', timer); // Güncel timer'ı yayınla
-  }, 1000); // 1000 ms = 1 saniye
+    io.emit('timerUpdated', timer);
+  }, 1000);
 };
 
 const resumeTimer = () => {
-  clearInterval(intervalId); // Eğer önceki timer varsa, durdur
+  clearInterval(intervalId);
 
   intervalId = setInterval(() => {
     if (remainingTime.seconds === 0) {
       if (remainingTime.minutes === 0) {
-        clearInterval(intervalId); // Timer bittiğinde durdur
+        clearInterval(intervalId);
         return;
       }
       remainingTime.minutes -= 1;
@@ -55,9 +61,8 @@ const resumeTimer = () => {
     } else {
       remainingTime.seconds -= 1;
     }
-
     timer = { minutes: remainingTime.minutes, seconds: remainingTime.seconds };
-    io.emit('timerUpdated', timer); // Güncel timer'ı yayınla
+    io.emit('timerUpdated', timer);
   }, 1000);
 };
 
@@ -68,6 +73,7 @@ const resetTimer = () => {
   io.emit('timerUpdated', timer);
 };
 
+// Timer API'leri
 app.post('/api/timer/start', (req, res) => {
   const { minutes } = req.body;
   startTimer(minutes);
@@ -86,13 +92,11 @@ app.post('/api/timer/reset', (req, res) => {
 
 app.post('/api/timer/stop', (req, res) => {
   clearInterval(intervalId);
-  remainingTime = { minutes: timer.minutes, seconds: timer.seconds }; // Kalan zamanı kaydet
+  remainingTime = { minutes: timer.minutes, seconds: timer.seconds };
   res.status(200).json({ message: 'Timer stopped', timer });
 });
 
-// Öğrenci verisi
-let students = [];
-
+// Öğrenci API'leri
 app.get('/api/students', (req, res) => {
   res.status(200).json(students);
 });
@@ -126,16 +130,27 @@ app.put('/api/students/:name', (req, res) => {
   }
 });
 
+// Mesajlaşma API'leri
 io.on('connection', (socket) => {
   console.log('A user connected');
+  
+  // İlk verileri gönder
   socket.emit('timerUpdated', timer);
   socket.emit('studentsUpdated', students);
+  socket.emit('allMessages', messages);
+
+  // Mesajları Dinle
+  socket.on('sendMessage', (messageData) => {
+    messages.push(messageData);
+    io.emit('receiveMessage', messageData);
+  });
 
   socket.on('disconnect', () => {
     console.log('A user disconnected');
   });
 });
 
+// Server Başlat
 const PORT = 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
