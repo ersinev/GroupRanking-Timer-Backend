@@ -130,6 +130,12 @@ app.put('/api/students/:name', (req, res) => {
   }
 });
 
+app.post('/api/messages/deleteAll', (req, res) => {
+  messages = [];  // Clear all messages
+  io.emit('allMessages', messages); // Emit the updated messages to all connected clients
+  res.status(200).json({ message: 'All messages deleted', messages });
+});
+
 // Mesajlaşma API'leri
 io.on('connection', (socket) => {
   console.log('A user connected');
