@@ -10,7 +10,7 @@ const url = `https://challengeday.netlify.app`
 
 const io = socketIo(server, {
   cors: {
-    origin: url,
+    origin: [url,`https://challengeday.netlify.app/admin`],
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
 });
