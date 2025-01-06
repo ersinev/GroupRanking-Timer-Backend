@@ -5,15 +5,19 @@ const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
+const url = `https://challengeday.netlify.app`
+//const url = `http://localhost:3000`
+
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: url,
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
 });
 
 app.use(cors());
 app.use(express.json());
+
 
 // Timer Verisi
 let timer = { minutes: 0, seconds: 0 };
